@@ -1,11 +1,45 @@
 from flask import Flask, request, jsonify
+import mysql.connector
 import subprocess
 import os
 
 app = Flask(__name__)
+
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="password",
+    database="mysql"
+)
+
+@app.route("/get_db", methods=["GET"])
+def db_test():
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM namespace;")
+    result = cursor.fetchall()
+    cursor.close()
+    return str(result)
+
+# @app.route("/put_db", methods=["PUT"])
+# def get_db():
+#     data = request.json
+#     db_name = data["namespace"]
+#     cursor = db.cursor()
+#     cursor.execute(f"USE {db_name};")
+#     cursor.execute("SHOW TABLES;")
+#     cursor.execute(f"INSERT INTO {db_name} (namespace_cpu, namespace_mem, script) VALUES (50, 2048, 'init');")
+#     result = cursor.fetchall()
+#     cursor.close()
+#     return str(result)
+
 BASE_DIR = "/containers"
 
 NAMESPACE_CLI = "/namespace.sh"  # caminho absoluto do script
+
+@app.route("/")
+def index():
+    print("Testing database connection...")
+    return "API de Gerenciamento de Namespaces"
 
 @app.route("/create", methods=["POST"])
 def create_namespace():
