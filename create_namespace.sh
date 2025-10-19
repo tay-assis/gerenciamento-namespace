@@ -1,48 +1,42 @@
-#para se der erro
+#!/bin/bash
 set -e
 
 NAME=$1
 CPU=$2
-MEMORY=$3  
-SCRIPT=$4   
+MEMORY=$3
+SCRIPT=$4
 
-ROOTFS_TAR="/containers/alphine.tar.gz"
-ROOTFS_DIR="/containers/basefs"
-
-
-mkdir -p "$ROOTFS_DIR"
-tar -xzf "$ROOTFS_TAR" -C "$ROOTFS_DIR"
-
-BASE_DIR="./containers/namespaces/$NAME"
+ROOTFS_TAR="./containers/alpine.tar.gz"
 ROOTFS_DIR="./containers/basefs"
+BASE_DIR="./containers/namespaces/$NAME"
 CGROUP_BASE="/sys/fs/cgroup"
 
+# 1️⃣ Garante que o rootfs existe
+if [ ! -d "$ROOTFS_DIR" ] || [ -z "$(ls -A "$ROOTFS_DIR")" ]; then
+    mkdir -p "$ROOTFS_DIR"
+    tar -xzf "$ROOTFS_TAR" -C "$ROOTFS_DIR"
+fi
 
 
-#cria diretorio do conteiner
-# Cria namespaces (PID, NET, MOUNT)
-# apos -c tudo está sendo executando dentro do namespace 
-#mount --bind copia o filsesystem base para dentro do namespace
-#pivot_root . old_root troca o diretorio raiz para o o diretorio base criado
-#mount -t proc proc /proc monta o sistema de arquivos base no novo file system
-#umount -l /old_root || truermdir /old_root || true demonta e remove o fileystem antigo 
+mount --bind $ROOTFS_DIR /newroot
 unshare --fork --pid --mount --net --uts --ipc bash -c "
     set -e
-
     hostname $NAME
 
     mkdir -p /newroot
-    mount --bind $ROOTFS_DIR /newroot
+    /bin/mount --bind $ROOTFS_DIR /newroot
+
 
     cd /newroot
     mkdir -p old_root
-
     pivot_root . old_root
+
 
     mount -t proc proc /proc
     mount -t sysfs sys /sys
     mount -t tmpfs tmpfs /tmp
-    mount -t devtmpfs devtmpfs /dev
+    mount -t devtmpfs devtmpfs /dev || true
+
 
     umount -l /old_root || true
     rmdir /old_root || true
@@ -50,42 +44,50 @@ unshare --fork --pid --mount --net --uts --ipc bash -c "
     echo \"🌍 Container '$NAME' iniciado (PID: $$)\"
 
     if [ -n \"$SCRIPT\" ]; then
-       
         /bin/sh -c \"$SCRIPT\"
         echo \"✅ Script finalizado.\"
         sleep 2
-    else
-        exec /bin/sh
     fi
-    sleep infinity
 " &
 
+
 PID=$!
-mkdir -p "$BASE_DIR"   # garante que o host tem o diretório
+mkdir -p "$BASE_DIR"
 echo $PID > "$BASE_DIR/pid"
-sleep 1  # espera o namespace inicializar
+sleep 1
 
-
-#cgroups
-
-
+# 3️⃣ Cgroups — detecção automática
+CGROUP_TYPE=$(stat -fc %T /sys/fs/cgroup)
 CPU_QUOTA=$((CPU * 1000))
+MEM_LIMIT=$((MEMORY * 1024 * 1024))
 
-mkdir -p $CGROUP_BASE/cpu/$NAME
-mkdir -p $CGROUP_BASE/memory/$NAME
+if [ "$CGROUP_TYPE" = "cgroup2fs" ]; then
+    CGROUP_PATH="$CGROUP_BASE/$NAME"
+    sudo mkdir -p "$CGROUP_PATH"
 
-# Limita CPU
-echo $CPU_QUOTA > sudo tee $CGROUP_BASE/cpu/$NAME/cpu.cfs_quota_us
-echo 100000 > sudo tee $CGROUP_BASE/cpu/$NAME/cpu.cfs_period_us
+    # Limites
+    echo "$CPU_QUOTA 100000" | sudo tee "$CGROUP_PATH/cpu.max" >/dev/null
+    echo "$MEM_LIMIT" | sudo tee "$CGROUP_PATH/memory.max" >/dev/null
 
-# Limita memória
-echo $((MEMORY * 1024 * 1024)) > sudo tee $CGROUP_BASE/memory/$NAME/memory.limit_in_bytes
+    # Adiciona o processo
+    echo "$PID" | sudo tee "$CGROUP_PATH/cgroup.procs" >/dev/null
 
-# Adiciona o processo principal do container aos cgroups
-echo $PID > sudo tee $CGROUP_BASE/cpu/$NAME/cgroup.procs
-echo $PID > sudo tee $CGROUP_BASE/memory/$NAME/cgroup.procs
+else
+    echo "⚙️ Usando cgroups v1"
+    sudo mkdir -p $CGROUP_BASE/cpu/$NAME
+    sudo mkdir -p $CGROUP_BASE/memory/$NAME
 
-echo "✅ Container '$NAME' iniciado (PID=$PID)"
+    echo $CPU_QUOTA | sudo tee $CGROUP_BASE/cpu/$NAME/cpu.cfs_quota_us >/dev/null
+    echo 100000 | sudo tee $CGROUP_BASE/cpu/$NAME/cpu.cfs_period_us >/dev/null
+    echo $MEM_LIMIT | sudo tee $CGROUP_BASE/memory/$NAME/memory.limit_in_bytes >/dev/null
+
+    echo $PID | sudo tee $CGROUP_BASE/cpu/$NAME/cgroup.procs >/dev/null
+    echo $PID | sudo tee $CGROUP_BASE/memory/$NAME/cgroup.procs >/dev/null
+fi
+
+# 4️⃣ Resumo
+echo
+echo "namespace '$NAME' iniciado (PID=$PID)"
 echo "   CPU: $CPU% | MEM: ${MEMORY}MB"
 echo "   RootFS: $ROOTFS_DIR"
 echo "   Para acessar: sudo nsenter --target $PID --mount --uts --ipc --net --pid /bin/sh"

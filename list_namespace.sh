@@ -1,7 +1,7 @@
     echo "Namespaces existentes:"
-    $BASE_DIR= "./containers/namespaces/"
-    for name in "$BASE_DIR"/*; do
-        [ -d "$name" ] || continue
+    #$BASE_DIR= "./containers/namespaces/"
+    for name in "./containers/namespaces/"/*; do
+        [ -d "./containers/namespaces/" ] || continue
         NS_NAME=$(basename "$name")
         PID_FILE="$name/pid"
         OUTPUT_LOG="$name/output.log"

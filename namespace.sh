@@ -23,22 +23,24 @@ case "$SUBCOMMAND" in
         NAMESPACE_ID=$1
         shift
         CMD="$@"
-        bash create_namespace.sh "$NAMESPACE_ID" "$CMD"
+        bash execin_namespace.sh "$NAMESPACE_ID" "$CMD"
         ;;
     
     exec)
         # Shell interativo
-        sudo nsenter --target "$PID" --mount --uts --ipc --net --pid bash
+        NAMESPACE_ID=$1
+        bash exec_namespace.sh "$NAMESPACE_ID"
         ;;
 
     delete)
+        NAMESPACE_ID=$1
         bash delete_namespace.sh "$NAMESPACE_ID"
         ;;
 
     
     list)
     # Lista todos os namespaces e seus status
-        bash list_namespaces.sh
+        bash list_namespace.sh
         ;;
 
 

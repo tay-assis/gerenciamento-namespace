@@ -5,7 +5,7 @@ NAMESPACE_ID=$1
 shift
 CMD="$@"
 
-BASE_DIR="/containers/namespaces/$NAMESPACE_ID"
+BASE_DIR="./containers/namespaces/$NAMESPACE_ID"
 PID_FILE="$BASE_DIR/pid"
 
 PID=$(cat "$PID_FILE")
@@ -17,4 +17,4 @@ if [ ! -d "/proc/$PID" ]; then
 fi
 
 # Executa o comando dentro do namespace
-sudo nsenter --target "$PID" --mount --uts --ipc --net --pid -- bash -c "$CMD"
+sudo nsenter --target "$PID" --mount --uts --ipc --net --pid /bin/sh -c "$CMD"
