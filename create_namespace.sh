@@ -6,15 +6,17 @@ CPU=$2
 MEMORY=$3  
 SCRIPT=$4   
 
-BASE_DIR="./containers/$NAME"
-ROOTFS_DIR="/containers/basefs"
-CGROUP_BASE="/sys/fs/cgroup"
-ROOTFS_TAR="//containers/alphine.tar.gz"
+ROOTFS_TAR="/containers/alphine.tar.gz"
 ROOTFS_DIR="/containers/basefs"
 
 
 mkdir -p "$ROOTFS_DIR"
 tar -xzf "$ROOTFS_TAR" -C "$ROOTFS_DIR"
+
+BASE_DIR="./containers/namespaces/$NAME"
+ROOTFS_DIR="./containers/basefs"
+CGROUP_BASE="/sys/fs/cgroup"
+
 
 
 #cria diretorio do conteiner
