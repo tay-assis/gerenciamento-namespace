@@ -9,7 +9,7 @@ db = mysql.connector.connect(
     host="localhost",
     user="root",
     password="password",
-    database="mysql"
+    database="namespaces"
 )
 
 @app.route("/get_db", methods=["GET"])
