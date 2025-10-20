@@ -3,13 +3,6 @@ import mysql.connector
 
 app = Flask(__name__)
 
-# Exemplo simples de "banco de dados" em memória
-namespaces = [
-    {"id": 1, "cores": 2, "memoria": 4096, "status": "rodando"},
-    {"id": 2, "cores": 4, "memoria": 8192, "status": "terminado"},
-    {"id": 3, "cores": 2, "memoria": 4096, "status": "erro"},
-]
-
 db = mysql.connector.connect(
     host = "localhost",
     user = "root",
