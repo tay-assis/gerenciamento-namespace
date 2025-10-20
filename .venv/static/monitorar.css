@@ -1,0 +1,130 @@
+/* --- Mantendo seu CSS original --- */
+
+/* Corpo, container, títulos, botões, status permanecem iguais */
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 900px; /* aumentei pra caber melhor a tabela */
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+  table-layout: auto; /* ajusta largura das colunas ao conteúdo */
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+th {
+  background-color: #f0f0f0;
+  font-weight: 600;
+}
+
+/* Ajuste de largura das colunas sem quebrar o design original */
+th:nth-child(1), td:nth-child(1) { width: 5%; }    /* ID */
+th:nth-child(2), td:nth-child(2) { width: 10%; }   /* Cores */
+th:nth-child(3), td:nth-child(3) { width: 15%; }   /* Memória */
+th:nth-child(4), td:nth-child(4) { width: 10%; }   /* Io */
+th:nth-child(5), td:nth-child(5) { width: 25%; }   /* Script */
+th:nth-child(6), td:nth-child(6) { width: 10%; }   /* Status */
+th:nth-child(7), td:nth-child(7) { width: 25%; }   /* Ações */
+
+/* Quebrar o texto longo do script */
+td:nth-child(5) {
+  word-break: break-word;
+}
+
+/* Espaçamento entre botões na coluna de ações */
+td form button {
+  margin: 2px 2px;
+}
+
+/* --- Botões e status continuam como no seu CSS original --- */
+.status {
+  border-radius: 6px;
+  padding: 3px 3px;
+  color: white;
+  font-weight: 500;
+}
+
+.status.rodando { background-color: #28a745; }
+.status.terminado { background-color: #6c757d; }
+.status.erro { background-color: #dc3545; }
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.ver-log {
+  background-color: #3498db;
+  color: white;
+}
+
+.ver-log:hover {
+  background-color: #1f6fa9;
+}
+
+.encerrar {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.encerrar:hover {
+  background-color: #c0392b;
+}
+
+.remover {
+  background-color: #7f8c8d;
+  color: white;
+}
+
+.remover:hover {
+  background-color: #5c6365;
+}
+
+.voltar {
+  width: 100%;
+  padding: 12px;
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.voltar:hover {
+  background-color: #1a242f;
+}
