@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Página Inicial</title>
+
+  <!-- Importa o CSS do static -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    {% include 'forms.html' %}
+  </main>
+
+  <!-- Importa o JS -->
+  <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
+

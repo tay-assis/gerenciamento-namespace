@@ -1,0 +1,29 @@
+<div class="container">
+  <h2>Configurar Namespace</h2>
+
+  <form id="namespaceForm" action="{{ url_for('criar_namespace') }}" method="POST">
+    <label for="nome">Nome do NameSpace </label>
+    <input type="text" id="nome" name="nome" min="1" max="100" required>
+
+    <label for="cores">Quantidade de Cores (mínimo 2)</label>
+    <input type="range" id="coresRange" name="coresRange" value="2" oninput="cores.value = this.value">
+    <input type="number" id="cores" name="cores" value="2" oninput="coresRange.value = this.value" required>
+
+    <label for="memoria">Memória (mínimo 4096 MB)</label>
+    <input type="range" id="memoriaRange" name="memoriaRange" oninput="memoria.value = this.value">
+    <input type="number" id="memoria" name="memoria"oninput="memoriaRange.value = this.value" required>
+
+    <label for="io">Tempo de IO por segundo (ms)</label>
+    <input type="number" id="io" name="io" min="1" required>
+
+    <label for="script">Script (comandos/programas)</label>
+    <textarea id="script" name="script" rows="4" required></textarea>
+
+    <button type="submit">Criar Namespace</button>
+  </form>
+
+  <form action="{{ url_for('monitorar') }}" method="GET">
+    <button type="submit" class="secondary-button">Monitorar Namespaces</button>
+  </form>  
+</div>
+
