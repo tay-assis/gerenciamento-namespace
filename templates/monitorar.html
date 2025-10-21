@@ -33,7 +33,13 @@
         <td>{{ ns.namespace_mem }}</td>
         <td>{{ ns.namespace_io }}</td>
         <td>{{ ns.script }}</td>
-          <td><span class="status {{ ns.status }}">{{ ns.status|capitalize }}</span></td>
+        
+        <td>
+          <form action="{{ url_for('ver_status', ns_id=ns.namespace_id) }}" method="GET" style="display:inline;">
+            <button type="submit" class="status-btn">{{ ns.status|capitalize }}</button>
+          </form>
+        </td>
+
           <td>
             <form action="{{ url_for('ver_log', ns_id=ns.namespace_id) }}" method="GET" style="display:inline;">
               <button type="submit" class="ver-log">Ver Log</button>
