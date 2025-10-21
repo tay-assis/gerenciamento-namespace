@@ -128,3 +128,18 @@ button {
 .voltar:hover {
   background-color: #1a242f;
 }
+
+.status-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.status-btn:hover {
+  background-color: #117a8b;
+}
