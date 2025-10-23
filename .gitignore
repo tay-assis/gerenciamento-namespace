@@ -1,2 +1,4 @@
 # Ignorar o rootfs expandido
 containers/*/
+.venv/
+__pycache__/
