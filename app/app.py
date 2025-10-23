@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
+import subprocess, os, time
 
 app = Flask(__name__)
 
@@ -38,27 +39,40 @@ def criar_namespace():
         print("📂 Caminho do script:", script_path)
 
         # Executa o script bash
-        result = subprocess.run(
-            ["sudo", "bash", script_path, nome, cpu, memoria, io, script],
-            capture_output=True,
-            text=True
+        process = subprocess.Popen(
+        ["sudo", "bash", script_path, nome, cpu, memoria, io, script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
         )
 
-        print("⚙️ STDOUT:", result.stdout)
-        print("⚠️ STDERR:", result.stderr)
+        # Espera alguns segundos pra capturar logs iniciais
+        time.sleep(2)
+
+        # Captura o que foi impresso até agora
+        stdout = process.stdout.read()
+        stderr = process.stderr.read()
+
+        # Procura pid no arquivo gerado
+        pid_file = f"./containers/namespaces/{nome}/pid"
+        for i in range(10):  # tenta por até ~10 segundos
+            if os.path.exists(pid_file) and os.path.getsize(pid_file) > 0:
+                with open(pid_file) as f:
+                    pid = f.read().strip()
+                break 
+
+        time.sleep(1)
+        # NÃO espera o processo terminar — ele continua rodando
+        stdout, stderr = process.communicate(timeout=5)
+        print("⚙️ STDOUT:", stdout)
+        print("⚠️ STDERR:", stderr)
+        print("🐧 PID capturado:", pid) 
 
         # Verifica erro de execução
-        if result.returncode != 0:
-            return f"Erro ao executar o script:<br><pre>{result.stderr}</pre>", 500
-
-        # Tenta capturar PID do stdout (ex: "PID=1234")
-        pid = None
-        for line in result.stdout.splitlines():
-            if "PID=" in line:
-                pid = line.split("PID=")[-1].strip()
-                break
-
-        status = "running" if pid else "unknown"
+        if os.path.exists(f"/proc/{pid}"):
+            status = "running"
+        else:
+            status = "terminated"
 
         # Insere no banco
         try:
@@ -114,13 +128,40 @@ def encerrar_namespace(ns_id):
 def remover_namespace(ns_id):
     try:
         cursor = db.cursor()
-        query = "DELETE FROM namespace WHERE namespace_id = %s"
-        cursor.execute(query, (ns_id,))
+        cursor.execute("SELECT namespace_name FROM namespace WHERE id = %s", (ns_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            cursor.close()
+            return f"❌ Namespace com ID {ns_id} não encontrado no banco.", 404
+
+        namespace_name = result[0]
+        cursor.close()
+        script_path = os.path.join(os.getcwd(), "delete_namespace.sh")
+        result = subprocess.run(
+            ["sudo", "bash", script_path, namespace_name],
+            capture_output=True,
+            text=True
+        )
+
+        print("⚙️ STDOUT:", result.stdout)
+        print("⚠️ STDERR:", result.stderr)
+
+        if result.returncode != 0:
+            return f"❌ Erro ao remover namespace físico:<br><pre>{result.stderr}</pre>", 500
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM namespace WHERE id = %s", (ns_id,))
         db.commit()
         cursor.close()
+
+        print(f"✅ Namespace '{namespace_name}' (ID={ns_id}) removido do sistema e do banco.")
         return redirect(url_for('monitorar'))
+
     except mysql.connector.Error as err:
-        return f"Erro ao remove do banco: {err}"
+        return f"❌ Erro MySQL: {err}", 500
+
+    except Exception as e:
+        return f"❌ Erro inesperado: {e}", 500
     
 @app.route('/ver_status/<int:ns_id>', methods=['GET'])
 def ver_status(ns_id):

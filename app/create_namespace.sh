@@ -76,3 +76,5 @@ echo "8:0 rbps=$IO_LIMIT" > "$CGROUP_PATH/io.max"
 #ADICIONA NAMESPACE AO CGROUPS CRIADO
 echo "$PID" > "$CGROUP_PATH/cgroup.procs"
 echo "$PID" | sudo tee "$CGROUP_PATH/cgroup.procs"
+echo "PID do namespace: $PID"
+
