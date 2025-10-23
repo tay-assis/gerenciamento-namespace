@@ -7,7 +7,7 @@ db = mysql.connector.connect(
     host = "localhost",
     user = "root",
     password = "password",
-    database = "namespace"
+    database = "namespace_db"
 )
 
 @app.route('/')
