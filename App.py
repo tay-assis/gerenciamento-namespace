@@ -4,16 +4,24 @@ import mysql.connector
 app = Flask(__name__)
 
 db = mysql.connector.connect(
-    host = "localhost",
-    user = "root",
-    password = "password",
-    database = "namespace"
+    host="localhost",
+    user="user",
+    password="password",
+    database="namespace"
 )
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
+import os
+import subprocess
+import json
+from flask import Flask, request
+import mysql.connector
+
+app = Flask(__name__)
 
 @app.route('/criar_namespace', methods=['POST'])
 def criar_namespace():
@@ -23,25 +31,55 @@ def criar_namespace():
     io = request.form.get('io')
     script = request.form.get('script')
 
-    print(nome, cpu, memoria, io, script) 
-
+    print(nome, cpu, memoria, io, script)
     try:
-        cursor = db.cursor()
+        script_path = os.path.join(os.getcwd(), "create_namespace.sh")
+        print("📂 Caminho do script:", script_path)
 
-        query = """
-            INSERT INTO namespace (namespace_name, namespace_cpu, namespace_mem, namespace_io, script)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (nome, cpu, memoria, io, script))
-        # armazena as mudanças no banco de maneira permanente (usada no insert, update, delete)
-        # se não utilizar o commit, as mudanças não serão salvas quando o programa terminar
-        db.commit()
-        cursor.close()
+        # Executa o script bash
+        result = subprocess.run(
+            ["sudo", "bash", script_path, nome, cpu, memoria, io, script],
+            capture_output=True,
+            text=True
+        )
 
-        return f"Namespace inserido com sucesso! Script: {script}"
+        print("⚙️ STDOUT:", result.stdout)
+        print("⚠️ STDERR:", result.stderr)
 
-    except mysql.connector.Error as err:
-        return f"Erro ao inserir no banco: {err}"
+        # Verifica erro de execução
+        if result.returncode != 0:
+            return f"Erro ao executar o script:<br><pre>{result.stderr}</pre>", 500
+
+        # Tenta capturar PID do stdout (ex: "PID=1234")
+        pid = None
+        for line in result.stdout.splitlines():
+            if "PID=" in line:
+                pid = line.split("PID=")[-1].strip()
+                break
+
+        status = "running" if pid else "unknown"
+
+        # Insere no banco
+        try:
+            cursor = db.cursor()
+            query = """
+                INSERT INTO namespace (namespace_name, namespace_cpu, namespace_mem, namespace_io, script, pid, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (nome, cpu, memoria, io, script, pid, status))
+            db.commit()
+            cursor.close()
+
+            return f"✅ Namespace '{nome}' criado com sucesso! PID={pid}, Status={status}"
+
+        except mysql.connector.Error as err:
+            print("❌ Erro MySQL:", err)
+            return f"Erro ao inserir no banco: {err}", 500
+
+    except Exception as e:
+        print("❌ Erro geral:", e)
+        return f"Erro inesperado: {e}", 500
+
     
 
 @app.route('/monitorar', methods=['GET'])
