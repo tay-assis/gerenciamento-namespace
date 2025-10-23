@@ -27,7 +27,7 @@
       <tbody>
         {% for ns in namespaces %}
         <tr>
-        <td>{{ ns.namespace_id }}</td>
+        <td>{{ ns.id }}</td>
         <td>{{ ns.namespace_name }}</td>
         <td>{{ ns.namespace_cpu }}</td>
         <td>{{ ns.namespace_mem }}</td>
@@ -35,19 +35,19 @@
         <td>{{ ns.script }}</td>
         
         <td>
-          <form action="{{ url_for('ver_status', ns_id=ns.namespace_id) }}" method="GET" style="display:inline;">
+          <form action="{{ url_for('ver_status', ns_id=ns.id) }}" method="GET" style="display:inline;">
             <button type="submit" class="status-btn">{{ ns.status|capitalize }}</button>
           </form>
         </td>
 
           <td>
-            <form action="{{ url_for('ver_log', ns_id=ns.namespace_id) }}" method="GET" style="display:inline;">
+            <form action="{{ url_for('ver_log', nome=ns.namespace_name) }}" method="GET" style="display:inline;">
               <button type="submit" class="ver-log">Ver Log</button>
             </form>
-            <form action="{{ url_for('encerrar_namespace', ns_id=ns.namespace_id) }}" method="POST" style="display:inline;">
+            <form action="{{ url_for('encerrar_namespace', ns_id=ns.id) }}" method="POST" style="display:inline;">
               <button type="submit" class="encerrar">Encerrar</button>
             </form>
-            <form action="{{ url_for('remover_namespace', ns_id=ns.namespace_id) }}" method="POST" style="display:inline;">
+            <form action="{{ url_for('remover_namespace', ns_id=ns.id) }}" method="POST" style="display:inline;">
               <button type="submit" class="remover">Remover</button>
             </form>
           </td>

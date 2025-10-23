@@ -12,6 +12,7 @@ ROOTFS_DIR="./containers/basefs"
 BASE_DIR="./containers/namespaces/$NAME"
 CGROUP_BASE="/sys/fs/cgroup"
 
+
 #Cria o base SystemFile se não existir
 if [ ! -d "$ROOTFS_DIR" ] || [ -z "$(ls -A "$ROOTFS_DIR")" ]; then
     mkdir -p "$ROOTFS_DIR"
@@ -19,9 +20,12 @@ if [ ! -d "$ROOTFS_DIR" ] || [ -z "$(ls -A "$ROOTFS_DIR")" ]; then
 fi
 
 
+touch "$BASE_DIR/log.txt"
+
 #CRIA O NAMESPACE
 unshare --fork --pid --mount --net --uts --ipc bash -c "
     set -e
+    exec > >(tee -a "$BASE_DIR/log.txt") 2>&1 
     hostname $NAME
 
     mkdir -p /newroot
@@ -42,11 +46,10 @@ unshare --fork --pid --mount --net --uts --ipc bash -c "
     umount -l /old_root || true
     rmdir /old_root || true
 
-    echo \" Container '$NAME' iniciado (PID: $$)\"
+    
 
     if [ -n \"$SCRIPT\" ]; then
         /bin/sh -c \"$SCRIPT\"
-        echo \"Script finalizado.\"
         sleep 2
     fi
 " &

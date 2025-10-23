@@ -37,7 +37,6 @@ db = mysql.connector.connect(
 def index():
     return render_template('index.html')
 
-app = Flask(__name__)
 
 @app.route('/criar_namespace', methods=['POST'])
 def criar_namespace():
@@ -59,12 +58,20 @@ def criar_namespace():
         )
         # Procura pid no arquivo gerado
         pid_file = f"./containers/namespaces/{nome}/pid"
-        while True:  # tenta por até ~10 segundos
+        timeout = 10  # segundos
+        start_time = time.time()
+        pid = None
+
+        while time.time() - start_time < timeout:
             if os.path.exists(pid_file) and os.path.getsize(pid_file) > 0:
                 with open(pid_file) as f:
                     pid = f.read().strip()
-                break 
-        time.sleep(1)
+                break
+            time.sleep(0.5)
+
+        if not pid:
+            return f"❌ Erro: arquivo de PID não encontrado após {timeout}s. Saída do script:\n{process.stderr.read()}", 500
+      
 
         # Verifica status do namespace
         if os.path.exists(f"/proc/{pid}"):
@@ -205,5 +212,19 @@ def ver_status(ns_id):
 
     except mysql.connector.Error as err:
         return f"Erro ao consultar status: {err}"
+
+@app.route('/ver_log/<string:nome>')
+def ver_log(nome):
+    log_file= f"./containers/namespaces/{nome}/log.txt"
+    if not log_file:
+        return f"Nenhum log encontrado para '{nome}'"
+
+    with open(log_file, "r") as f:
+        conteudo = f.read()
+    return f"<pre>{conteudo}</pre>"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
