@@ -2,3 +2,4 @@
 containers/*/
 .venv/
 __pycache__/
+namespace.log

@@ -110,18 +110,41 @@ def monitorar():
         return f"Erro ao listar no banco: {err}"
 
 
-@app.route('/ver_log/<int:ns_id>')
-def ver_log(ns_id):
-    # Aqui futuramente você pode abrir o arquivo de log correspondente
-    print(f"Visualizando log do namespace {ns_id}")
-    return f"Exibindo log do namespace {ns_id}"
 
 @app.route('/encerrar/<int:ns_id>', methods=['POST'])
 def encerrar_namespace(ns_id):
-    for ns in namespaces:
-        if ns["id"] == ns_id:
-            ns["status"] = "terminado"
-    return redirect(url_for('monitorar'))
+    try:
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT namespace_name, pid FROM namespace WHERE id = %s", (ns_id,))
+        result = cursor.fetchone()
+        cursor.close()
+
+        if not result:
+            return f" Namespace com ID {ns_id} não encontrado.", 404
+
+        nome = result["namespace_name"]
+        pid = result["pid"]
+
+        #  Tenta encerrar o processo
+        try:
+            subprocess.run(["sudo", "kill", "-TERM", str(pid)], check=False)
+            subprocess.run(["sudo", "pkill", "-TERM", "-P", str(pid)], check=False)
+            subprocess.run(["sudo", "pkill", "-9", "-P", str(pid)], check=False)
+            status = "terminated"
+
+        except subprocess.CalledProcessError:
+            status = "already stopped"
+
+        # Atualiza o status no banco
+        cursor = db.cursor()
+        cursor.execute("UPDATE namespace SET status = %s WHERE id = %s", (status, ns_id))
+        db.commit()
+        cursor.close()
+        app.logger.info(f"Namespace '{nome}' (PID {pid}) encerrado pelo IP {request.remote_addr}")
+        return redirect(url_for('monitorar'))
+
+    except mysql.connector.Error as err:
+        return f"Erro ao encerrar namespace: {err}", 500
 
 @app.route('/remover/<int:ns_id>', methods=['POST'])
 def remover_namespace(ns_id):
@@ -132,7 +155,7 @@ def remover_namespace(ns_id):
 
         if not result:
             cursor.close()
-            return f"❌ Namespace com ID {ns_id} não encontrado no banco.", 404
+            return f" Namespace com ID {ns_id} não encontrado no banco.", 404
 
         namespace_name = result[0]
         cursor.close()
@@ -143,25 +166,22 @@ def remover_namespace(ns_id):
             text=True
         )
 
-        print("⚙️ STDOUT:", result.stdout)
-        print("⚠️ STDERR:", result.stderr)
-
         if result.returncode != 0:
-            return f"❌ Erro ao remover namespace físico:<br><pre>{result.stderr}</pre>", 500
+            return f" Erro ao remover namespace físico:<br><pre>{result.stderr}</pre>", 500
         cursor = db.cursor()
         cursor.execute("DELETE FROM namespace WHERE id = %s", (ns_id,))
         db.commit()
         cursor.close()
 
-        print(f"✅ Namespace '{namespace_name}' (ID={ns_id}) removido do sistema e do banco.")
+        print(f" Namespace '{namespace_name}' (ID={ns_id}) removido do sistema e do banco.")
         app.logger.info(f"Namespace '{namespace_name}' (ID {ns_id}) removido pelo IP {request.remote_addr}")
         return redirect(url_for('monitorar'))
 
     except mysql.connector.Error as err:
-        return f"❌ Erro MySQL: {err}", 500
+        return f" Erro MySQL: {err}", 500
 
     except Exception as e:
-        return f"❌ Erro inesperado: {e}", 500
+        return f" Erro inesperado: {e}", 500
     
 @app.route('/ver_status/<int:ns_id>', methods=['GET'])
 def ver_status(ns_id):
