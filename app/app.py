@@ -30,7 +30,7 @@ db = mysql.connector.connect(
     host="localhost",
     user="user",
     password="password",
-    database="namespace"
+    database="namespace_db"
 )
 
 @app.route('/')

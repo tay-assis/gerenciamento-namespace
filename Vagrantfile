@@ -39,22 +39,34 @@ Vagrant.configure("2") do |config|
     ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
     FLUSH PRIVILEGES;"
 
-    echo "=== Criando banco e permissões ==="
+
+    echo "=== Criando banco de dados e usuário do Flask ==="
     mysql -u root -ppassword -e "
-    CREATE DATABASE IF NOT EXISTS namespace_db;
-    CREATE USER IF NOT EXISTS 'vagrant'@'%' IDENTIFIED BY 'vagrant';
-    GRANT ALL PRIVILEGES ON namespace_db.* TO 'vagrant'@'%';
-    FLUSH PRIVILEGES;"
+      CREATE DATABASE IF NOT EXISTS namespace_db;
+      CREATE USER IF NOT EXISTS 'user'@'%' IDENTIFIED BY 'password';
+      GRANT ALL PRIVILEGES ON namespace_db.* TO 'user'@'%';
+      FLUSH PRIVILEGES;"
 
     echo "=== Criando tabela namespace ==="
     mysql -u root -ppassword -e "
     USE namespace_db;
-    CREATE TABLE IF NOT EXISTS namespace (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL
-    );"
+      CREATE TABLE IF NOT EXISTS namespace (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          namespace_name VARCHAR(100),
+          namespace_cpu VARCHAR(50),
+          namespace_mem VARCHAR(50),
+          namespace_io VARCHAR(50),
+          script TEXT,
+          pid VARCHAR(50),
+          status VARCHAR(50)
+      );"
 
     echo "=== Instalando Flask e dependências ==="
     pip install flask mysql-connector-python
+
+    echo "=== Iniciando Flask com flask run ==="
+    cd /vagrant/app
+    export FLASK_APP=app.py
+    nohup flask run --host=0.0.0.0 --port=5000
   SHELL
 end
