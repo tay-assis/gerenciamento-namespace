@@ -1,9 +1,30 @@
 from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
-import subprocess, os, time
+import subprocess, os, time, json, logging, sys
+
 
 app = Flask(__name__)
 
+#CONFIGURAÇÕES DE LOG
+log_path = "namespace.log"
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
+
+#Configuração base (grava em arquivo)
+logging.basicConfig(
+    level=logging.INFO,
+    format=log_format,
+    handlers=[
+        logging.FileHandler(log_path),
+        logging.StreamHandler(sys.stdout)  # 👈 mantém saída no terminal
+    ]
+)
+
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.INFO)
+werkzeug_logger.addHandler(logging.FileHandler(log_path))
+werkzeug_logger.addHandler(logging.StreamHandler(sys.stdout))
+
+#CONEXÃO COM BANCO DE DADOS
 db = mysql.connector.connect(
 
     host="localhost",
@@ -15,13 +36,6 @@ db = mysql.connector.connect(
 @app.route('/')
 def index():
     return render_template('index.html')
-
-
-import os
-import subprocess
-import json
-from flask import Flask, request
-import mysql.connector
 
 app = Flask(__name__)
 
@@ -36,8 +50,6 @@ def criar_namespace():
     print(nome, cpu, memoria, io, script)
     try:
         script_path = os.path.join(os.getcwd(), "create_namespace.sh")
-        print("📂 Caminho do script:", script_path)
-
         # Executa o script bash
         process = subprocess.Popen(
         ["sudo", "bash", script_path, nome, cpu, memoria, io, script],
@@ -45,35 +57,20 @@ def criar_namespace():
         stderr=subprocess.PIPE,
         text=True
         )
-
-        # Espera alguns segundos pra capturar logs iniciais
-        time.sleep(2)
-
-        # Captura o que foi impresso até agora
-        stdout = process.stdout.read()
-        stderr = process.stderr.read()
-
         # Procura pid no arquivo gerado
         pid_file = f"./containers/namespaces/{nome}/pid"
-        for i in range(10):  # tenta por até ~10 segundos
+        while True:  # tenta por até ~10 segundos
             if os.path.exists(pid_file) and os.path.getsize(pid_file) > 0:
                 with open(pid_file) as f:
                     pid = f.read().strip()
                 break 
-
         time.sleep(1)
-        # NÃO espera o processo terminar — ele continua rodando
-        stdout, stderr = process.communicate(timeout=5)
-        print("⚙️ STDOUT:", stdout)
-        print("⚠️ STDERR:", stderr)
-        print("🐧 PID capturado:", pid) 
 
-        # Verifica erro de execução
+        # Verifica status do namespace
         if os.path.exists(f"/proc/{pid}"):
             status = "running"
         else:
             status = "terminated"
-
         # Insere no banco
         try:
             cursor = db.cursor()
@@ -94,6 +91,8 @@ def criar_namespace():
     except Exception as e:
         print("❌ Erro geral:", e)
         return f"Erro inesperado: {e}", 500
+    app.logger.info(f"Namespace '{nome}' criado (PID {pid}) pelo IP {request.remote_addr}")
+
 
     
 
@@ -155,6 +154,7 @@ def remover_namespace(ns_id):
         cursor.close()
 
         print(f"✅ Namespace '{namespace_name}' (ID={ns_id}) removido do sistema e do banco.")
+        app.logger.info(f"Namespace '{namespace_name}' (ID {ns_id}) removido pelo IP {request.remote_addr}")
         return redirect(url_for('monitorar'))
 
     except mysql.connector.Error as err:
@@ -167,15 +167,22 @@ def remover_namespace(ns_id):
 def ver_status(ns_id):
     try:
         cursor = db.cursor(dictionary=True)
-        cursor.execute("SELECT status FROM namespace WHERE namespace_id = %s", (ns_id,))
+        cursor.execute("SELECT pid, namespace_name FROM namespace WHERE id = %s", (ns_id,))
         result = cursor.fetchone()
         cursor.close()
 
-        if result:
-            status = result["status"]
-            return f"Status do namespace {ns_id}: {status}"
+        if not result:
+            return f" Namespace com ID {ns_id} não encontrado."
+
+        pid = result["pid"]
+        nome = result["namespace_name"]
+
+        if os.path.exists(f"/proc/{pid}"):
+            status = "running"
         else:
-            return f"Namespace {ns_id} não encontrado."
+            status = "terminated"
+        return f"Status do namespace '{nome}' (PID {pid}): {status}"
+
     except mysql.connector.Error as err:
         return f"Erro ao consultar status: {err}"
 
