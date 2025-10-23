@@ -1,5 +1,5 @@
 # Ignorar o rootfs expandido
-containers/*/
+containers/namespaces
 .venv/
 __pycache__/
 namespace.log
