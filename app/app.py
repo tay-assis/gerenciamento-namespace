@@ -53,26 +53,22 @@ def criar_namespace():
         process = subprocess.Popen(
         ["sudo", "bash", script_path, nome, cpu, memoria, io, script],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,  # junta stdout e stderr
+        stderr=subprocess.PIPE,
         text=True
         )
-
-        # Mostra tudo em tempo real no terminal Flask
-        output = []
+        
+        # Procura pid no arquivo gerado
         pid_file = f"./containers/namespaces/{nome}/pid"
-        timeout = 10
-        start = time.time()
+        timeout = 10  # segundos
+        start_time = time.time()
+        pid = None
 
-        while time.time() - start < timeout:
-            line = process.stdout.readline()
-            if not line:
-                break
-            print(line, end="")
-            output.append(line)
+        while time.time() - start_time < timeout:
             if os.path.exists(pid_file) and os.path.getsize(pid_file) > 0:
                 with open(pid_file) as f:
                     pid = f.read().strip()
                 break
+            time.sleep(0.5)
 
         if not pid:
             return f"❌ Erro: arquivo de PID não encontrado após {timeout}s. Saída do script:\n{process.stderr.read()}", 500
