@@ -20,7 +20,12 @@ if [ ! -d "$ROOTFS_DIR" ] || [ -z "$(ls -A "$ROOTFS_DIR")" ]; then
 fi
 
 
+# Cria o diretório se não existir
+mkdir -p "$BASE_DIR"
+
+# Agora sim cria o log e o PID
 touch "$BASE_DIR/log.txt"
+touch "$BASE_DIR/pid"
 
 #CRIA O NAMESPACE
 unshare --fork --pid --mount --net --uts --ipc bash -c "

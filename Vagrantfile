@@ -64,9 +64,9 @@ Vagrant.configure("2") do |config|
     echo "=== Instalando Flask e dependências ==="
     pip install flask mysql-connector-python
 
-    echo "=== Iniciando Flask com flask run ==="
-    cd /vagrant/app
-    export FLASK_APP=app.py
-    nohup flask run --host=0.0.0.0 --port=5000
+    #echo "=== Iniciando Flask com flask run ==="
+    #cd /vagrant/app
+    #export FLASK_APP=app.py
+    #nohup flask run --host=0.0.0.0 --port=5000
   SHELL
 end
