@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 3306, host: 3307   # <-- corrigido: o MySQL usa 3306 dentro do guest
 
   # Sincronização da pasta do projeto
-  # config.vm.synced_folder "./app", "/vagrant/app"
+  config.vm.synced_folder "./app", "/vagrant/app"
 
   config.vm.provider "virtualbox" do |vb|
     vb.name = "Flask-MySQL-VM"
@@ -63,8 +63,8 @@ Vagrant.configure("2") do |config|
       );"
 
     echo "=== Clonando o projeto Flask ==="
-    cd /home/vagrant
-    git clone -b feature/conexão_flask_script https://github.com/tay-assis/gerenciamento-namespace.git
+    # cd /home/vagrant
+    # git clone -b feature/conexão_flask_script https://github.com/tay-assis/gerenciamento-namespace.git
     
   
 
